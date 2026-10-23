@@ -100,7 +100,7 @@ async function api(path, params) {
   let r;
   try {
     r = await fetch(url, { headers: { Authorization: 'Basic ' + btoa(KEY + ':') } });
-  } catch (e) { throw new Error('NETWORK'); }
+  } catch (e) { throw new Error('NETWORK ' + path); }
   if (r.status === 404) return null;
   if (r.status === 401) throw new Error('KEY');
   if (r.status === 429) throw new Error('RATE');
@@ -113,11 +113,12 @@ async function api(path, params) {
 }
 
 function showError(e) {
-  const m = {
+  let m = {
     KEY: 'The API key was rejected. Check you pasted it right, and that it is a Web key.',
     RATE: 'Too many requests (limit is 600 per 5 minutes). Wait a bit and try again.',
     NETWORK: 'Could not reach Companies House from this page. Make sure you are using a Web key, that this site\'s address is listed under "JavaScript domains" for that key, and that you opened the hosted link (not the file from your computer).'
-  }[e.message] || ('Something went wrong: ' + e.message);
+  }[e.message.split(' ')[0]] || ('Something went wrong: ' + e.message);
+  if (e.message.startsWith('NETWORK ')) m += ' (failed on ' + e.message.slice(8) + ')';
   $('status').innerHTML = '<div class="msg err">' + esc(m) + '</div>';
 }
 
@@ -157,17 +158,26 @@ async function loadCompany(n) {
   $('status').innerHTML = '<div class="msg">Pulling filings...</div>';
   $('out').innerHTML = '';
   try {
-    const [profile, officers, filings, charges, psc, insolvency] = await Promise.all([
-      api('/company/' + n),
-      api('/company/' + n + '/officers', { items_per_page: 100 }),
-      api('/company/' + n + '/filing-history', { items_per_page: 100 }),
-      api('/company/' + n + '/charges'),
-      api('/company/' + n + '/persons-with-significant-control'),
-      api('/company/' + n + '/insolvency')
-    ]);
-    if (!profile) { $('status').innerHTML = '<div class="msg err">Company not found.</div>'; return; }
-    $('status').innerHTML = '';
-    render({ profile, officers, filings, charges, psc, insolvency });
+    const calls = {
+      profile: () => api('/company/' + n),
+      officers: () => api('/company/' + n + '/officers', { items_per_page: 100 }),
+      filings: () => api('/company/' + n + '/filing-history', { items_per_page: 100 }),
+      charges: () => api('/company/' + n + '/charges'),
+      psc: () => api('/company/' + n + '/persons-with-significant-control'),
+      insolvency: () => api('/company/' + n + '/insolvency')
+    };
+    const keys = Object.keys(calls);
+    const res = await Promise.allSettled(keys.map(k => calls[k]()));
+    const co = {}, notes = [];
+    res.forEach((r, i) => {
+      if (r.status === 'fulfilled') co[keys[i]] = r.value;
+      else { co[keys[i]] = null; notes.push(keys[i] + ' -> ' + r.reason.message); }
+    });
+    if (res[0].status === 'rejected') throw res[0].reason;
+    if (!co.profile) { $('status').innerHTML = '<div class="msg err">Company not found. Check the number and try again.</div>'; return; }
+    $('status').innerHTML = notes.length
+      ? '<div class="msg">Some data could not be loaded and is shown as empty: ' + esc(notes.join(' | ')) + '</div>' : '';
+    render(co);
   } catch (e) { showError(e); }
 }
 
