@@ -1,290 +1,529 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-GB">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Company Health Dashboard</title>
+<title>Companies House research dashboard</title>
 <style>
-:root{--bg:#f6f7f9;--card:#fff;--ink:#1c2330;--mute:#657084;--line:#e3e7ee;--accent:#1f6feb;--good:#1a7f4b;--warn:#b45309;--bad:#b42318}
-@media (prefers-color-scheme:dark){:root{--bg:#0f141b;--card:#171e28;--ink:#e8edf4;--mute:#93a0b4;--line:#263040;--accent:#5aa2ff;--good:#3fb97c;--warn:#e0a03a;--bad:#f0685d}}
+:root{--bg:#f4f5f7;--card:#ffffff;--ink:#15191f;--mute:#4b5565;--line:#d5dae2;--accent:#0b5cd5;--bar:#0b5cd5;--neg:#b42318;--ok:#146c43;--bad:#b42318}
+@media (prefers-color-scheme:dark){:root{--bg:#0e131a;--card:#161d27;--ink:#eef2f7;--mute:#a9b4c4;--line:#2b3646;--accent:#6aa8ff;--bar:#6aa8ff;--neg:#ff8a80;--ok:#5fd39a;--bad:#ff8a80}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-.wrap{max-width:1000px;margin:0 auto;padding:20px 16px 48px}
-h1{font-size:24px;margin:0 0 4px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:20px 16px 56px}
+h1{font-size:26px;margin:0 0 4px}
+h2{font-size:20px;margin:0 0 10px}
+h3{font-size:17px;margin:0 0 8px}
 .sub{color:var(--mute);margin:0 0 18px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
 .row{display:flex;gap:8px;flex-wrap:wrap}
-input[type=text],input[type=password]{flex:1;min-width:180px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
-button{padding:10px 14px;border:0;border-radius:8px;background:var(--accent);color:#fff;font:inherit;cursor:pointer}
-button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
-button:disabled{opacity:.5;cursor:default}
-label{display:block;font-size:13px;color:var(--mute);margin-bottom:6px}
-.results button{display:block;width:100%;text-align:left;background:transparent;color:var(--ink);border:1px solid var(--line);margin-top:6px}
-.results button:hover{border-color:var(--accent)}
-.results small{color:var(--mute)}
-.msg{padding:12px 14px;border-radius:8px;margin:10px 0;border:1px solid var(--line)}
-.msg.err{border-color:var(--bad);color:var(--bad)}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
-.metric{border:1px solid var(--line);border-radius:10px;padding:12px}
-.metric .k{font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em}
-.metric .v{font-size:22px;font-weight:650;margin-top:2px;word-break:break-word}
-.pill{display:inline-block;padding:2px 10px;border-radius:99px;font-size:13px;font-weight:600;color:#fff}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-@media (max-width:700px){.two{grid-template-columns:1fr}}
-ul.sig{list-style:none;padding:0;margin:6px 0 0}
-ul.sig li{padding:4px 0}
-.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
-.tabs button{background:transparent;color:var(--ink);border:1px solid var(--line)}
-.tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
-table{width:100%;border-collapse:collapse;font-size:14px}
-th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-th{color:var(--mute);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+label{display:block;font-weight:600;margin-bottom:6px}
+.hint{color:var(--mute);font-size:14px;margin:6px 0 0}
+input[type=text],input[type=password]{flex:1;min-width:200px;padding:11px 12px;border:2px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+input[type=file]{font:inherit;color:var(--ink)}
+button{padding:11px 16px;border:2px solid var(--accent);border-radius:8px;background:var(--accent);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+button.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+button:disabled{opacity:.55;cursor:default}
+:focus-visible{outline:3px solid #ffb000;outline-offset:2px}
+.skip{position:absolute;left:-999px;top:0;background:var(--card);padding:8px 12px;border:2px solid var(--accent)}
+.skip:focus{left:8px;top:8px;z-index:10}
+.msg{padding:12px 14px;border-radius:8px;border:2px solid var(--line);margin-bottom:16px;background:var(--card)}
+.msg.err{border-color:var(--bad)}
+.msg.ok{border-color:var(--ok)}
+.msg b.t{display:block}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:12px 0 0}
+.fact{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.fact .k{font-size:13px;color:var(--mute)}
+.fact .v{font-weight:650;word-break:break-word}
 .tw{overflow-x:auto}
-.bars{display:flex;align-items:flex-end;gap:6px;height:150px;padding-top:10px;overflow-x:auto}
-.bar{flex:1;min-width:34px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
-.bar div{width:100%;background:var(--accent);border-radius:4px 4px 0 0;min-height:2px}
-.bar span{font-size:11px;color:var(--mute);margin-top:4px}
-.bar b{font-size:11px;margin-bottom:2px}
-.foot{color:var(--mute);font-size:13px;margin-top:20px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+caption{text-align:left;font-weight:600;padding:0 0 6px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mute);font-size:13px}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.na{color:var(--mute)}
+.chart{width:100%;height:auto;display:block;margin:6px 0 10px}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart .zero{stroke:var(--ink);stroke-width:1.5}
+.chart .ax{fill:var(--mute);font-size:11px}
+.chart .val{fill:var(--ink);font-size:11px;font-weight:600}
+.chart .bar{fill:var(--bar)}
+.chart .bar.neg{fill:var(--neg)}
+.chart .na-t{fill:var(--mute);font-size:12px;font-weight:700}
+details summary{cursor:pointer;font-weight:600;margin:4px 0 8px}
+a{color:var(--accent)}
 .hide{display:none}
 </style>
 </head>
 <body>
+<a class="skip" href="#results">Skip to results</a>
 <div class="wrap">
-  <h1>Company health dashboard</h1>
-  <p class="sub">Search a UK company and get a quick read from its public Companies House filings.</p>
+  <header>
+    <h1>Companies House research dashboard</h1>
+    <p class="sub">Enter a UK company number to see its status, officers, accounts filings and the financial figures in them.</p>
+  </header>
 
-  <div class="card" id="keyCard">
-    <label for="key">Companies House API key (Web key)</label>
-    <div class="row">
-      <input type="password" id="key" placeholder="Paste your key here" autocomplete="off">
-      <button class="ghost" id="saveKey">Save in this browser</button>
+  <main>
+    <section class="card" aria-labelledby="h-setup">
+      <h2 id="h-setup">Set up</h2>
+      <label for="key">Companies House API key (Web key)</label>
+      <div class="row">
+        <input type="password" id="key" autocomplete="off" aria-describedby="keyhint">
+        <button type="button" class="ghost" id="saveKey">Save in this browser</button>
+      </div>
+      <p class="hint" id="keyhint">Use a Web key, with this page's address listed under "JavaScript domains" for that key.</p>
+
+      <form id="form" style="margin-top:16px" novalidate>
+        <label for="num">Company number (8 characters)</label>
+        <div class="row">
+          <input type="text" id="num" maxlength="8" autocomplete="off" spellcheck="false" aria-describedby="numhint">
+          <button type="submit" id="go">Show company</button>
+        </div>
+        <p class="hint" id="numhint">For example 09446231, or SC123456 for a Scottish company. Keep any leading zeros.</p>
+      </form>
+    </section>
+
+    <div id="status" role="status" aria-live="polite"></div>
+    <div id="results">
+      <div id="hdr"></div>
+      <div id="officers"></div>
+      <div id="directors"></div>
+      <div id="filings"></div>
+      <div id="charts"></div>
     </div>
-  </div>
-
-  <div class="card">
-    <label for="q">Company name or number</label>
-    <div class="row">
-      <input type="text" id="q" placeholder="e.g. Monzo Bank or 09446231">
-      <button id="go">Search</button>
-    </div>
-    <div id="results" class="results"></div>
-  </div>
-
-  <div id="status"></div>
-  <div id="out"></div>
-
-  <p class="foot">Health score is a simple rule-based read on public data. Private companies only file limited accounts, so treat it as a signal, not a verdict. Not financial advice.</p>
+  </main>
 </div>
 
 <script>
-// Optional: paste a Web key here so visitors don't need their own.
-// Only do this if the key is locked to your site's domain on the Companies House developer hub.
-const DEFAULT_KEY = '';
-
-const BASE = 'https://api.company-information.service.gov.uk';
+'use strict';
+const API = 'https://api.company-information.service.gov.uk';
 const $ = id => document.getElementById(id);
-let KEY = DEFAULT_KEY;
-try { KEY = localStorage.getItem('ch_key') || DEFAULT_KEY; } catch (e) {}
-if (DEFAULT_KEY) $('keyCard').classList.add('hide');
-$('key').value = KEY;
-
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const pretty = s => s ? String(s).replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'n/a';
-const d = s => { const x = s ? new Date(s) : null; return x && !isNaN(x) ? x : null; };
-const fmt = s => s || '';
+const pretty = s => s ? String(s).replace(/[-_]/g, ' ').replace(/^\w/, c => c.toUpperCase()) : 'NA';
+const nz = v => (v === undefined || v === null || v === '') ? 'NA' : v;
 
-async function api(path, params) {
-  const url = new URL(BASE + path);
-  Object.entries(params || {}).forEach(([k, v]) => url.searchParams.set(k, v));
-  let r;
-  try {
-    r = await fetch(url, { headers: { Authorization: 'Basic ' + btoa(KEY + ':') } });
-  } catch (e) { throw new Error('NETWORK ' + path); }
-  if (r.status === 404) return null;
-  if (r.status === 401) throw new Error('KEY');
-  if (r.status === 429) throw new Error('RATE');
-  if (!r.ok) {
-    let body = '';
-    try { body = (await r.text()).slice(0, 300); } catch (e) {}
-    throw new Error('HTTP ' + r.status + ' on ' + path + (body ? ' - ' + body : ''));
-  }
-  return r.json();
-}
-
-function showError(e) {
-  let m = {
-    KEY: 'The API key was rejected. Check you pasted it right, and that it is a Web key.',
-    RATE: 'Too many requests (limit is 600 per 5 minutes). Wait a bit and try again.',
-    NETWORK: 'Could not reach Companies House from this page. Make sure you are using a Web key, that this site\'s address is listed under "JavaScript domains" for that key, and that you opened the hosted link (not the file from your computer).'
-  }[e.message.split(' ')[0]] || ('Something went wrong: ' + e.message);
-  if (e.message.startsWith('NETWORK ')) m += ' (failed on ' + e.message.slice(8) + ')';
-  $('status').innerHTML = '<div class="msg err">' + esc(m) + '</div>';
-}
-
+let KEY = '';
+try { KEY = localStorage.getItem('ch_key') || ''; } catch (e) {}
+$('key').value = KEY;
 $('saveKey').onclick = () => {
   KEY = $('key').value.trim();
   try { localStorage.setItem('ch_key', KEY); } catch (e) {}
-  $('status').innerHTML = '<div class="msg">Key saved in this browser.</div>';
+  setStatus('ok', 'Key saved in this browser.');
 };
 
-async function search() {
+let state = null, runId = 0;
+
+class AppError extends Error {}
+
+function setStatus(kind, msg, title) {
+  $('status').innerHTML = msg
+    ? '<div class="msg ' + (kind === 'error' ? 'err' : kind === 'ok' ? 'ok' : '') + '">' +
+      (title ? '<b class="t">' + esc(title) + '</b>' : '') + esc(msg) + '</div>'
+    : '';
+}
+
+/* ---------- API ---------- */
+async function request(url, options, label) {
+  let r;
+  try {
+    r = await fetch(url, Object.assign({}, options, {
+      headers: Object.assign({ Authorization: 'Basic ' + btoa(KEY + ':') }, (options && options.headers) || {})
+    }));
+  } catch (e) {
+    throw new AppError('The browser could not reach Companies House for ' + label + '. Check that you are using a Web key, that this page\'s address is listed under "JavaScript domains" for that key, and that you opened the hosted link and not the file from your computer.');
+  }
+  if (r.status === 401 || r.status === 403) throw new AppError('Companies House rejected the API key (error ' + r.status + '). Check that you pasted the whole Web key and that this page\'s address is listed for it.');
+  if (r.status === 429) throw new AppError('Too many requests to Companies House (limit is 600 every 5 minutes). Wait a few minutes and try again.');
+  return r;
+}
+
+async function apiJson(pathOrUrl, params) {
+  const u = new URL(pathOrUrl.startsWith('http') ? pathOrUrl : API + pathOrUrl);
+  Object.entries(params || {}).forEach(([k, v]) => u.searchParams.set(k, v));
+  const r = await request(u.toString(), {}, pathOrUrl.replace(/^https?:\/\/[^/]+/, ''));
+  if (r.status === 404) return null;
+  if (!r.ok) throw new AppError('Companies House returned error ' + r.status + ' for ' + pathOrUrl.replace(/^https?:\/\/[^/]+/, '') + '.');
+  return r.json();
+}
+
+async function allItems(path, params, cap) {
+  let start = 0, items = [], total = Infinity;
+  while (items.length < total && items.length < cap) {
+    const d = await apiJson(path, Object.assign({}, params, { items_per_page: 100, start_index: start }));
+    if (!d) return { items, total: items.length, missing: true };
+    const page = d.items || [];
+    items = items.concat(page);
+    total = d.total_results != null ? d.total_results : (d.total_count != null ? d.total_count : items.length);
+    if (!page.length) break;
+    start += 100;
+  }
+  return { items, total };
+}
+
+async function pool(items, n, fn) {
+  let i = 0;
+  await Promise.all(Array.from({ length: n }, async () => {
+    while (i < items.length) { const k = i++; await fn(items[k], k); }
+  }));
+}
+
+/* ---------- iXBRL reading ---------- */
+const METRICS = [
+  { key: 'turnover', label: 'Turnover (revenue)', names: ['TurnoverRevenue', 'Turnover', 'Revenue'] },
+  { key: 'gross', label: 'Gross profit', names: ['GrossProfitLoss', 'GrossProfit'] },
+  { key: 'operating', label: 'Operating profit or loss', names: ['OperatingProfitLoss'] },
+  { key: 'pbt', label: 'Profit or loss before tax', names: ['ProfitLossOnOrdinaryActivitiesBeforeTax', 'ProfitLossBeforeTax'] },
+  { key: 'profit', label: 'Profit or loss for the year', names: ['ProfitLoss', 'ProfitLossForPeriod'] },
+  { key: 'cash', label: 'Cash at bank and in hand', names: ['CashBankOnHand', 'CashBankInHand', 'CashAndCashEquivalents'] },
+  { key: 'cassets', label: 'Current assets', names: ['CurrentAssets'] },
+  { key: 'net', label: 'Net assets or liabilities', names: ['NetAssetsLiabilities'] },
+  { key: 'emp', label: 'Average number of employees', names: ['AverageNumberEmployeesDuringPeriod'], unitless: true }
+];
+const NAME2KEY = {};
+METRICS.forEach(m => m.names.forEach(n => { NAME2KEY[n] = m.key; }));
+
+const localName = el => el.tagName.toLowerCase().split(':').pop();
+
+function parseNum(el) {
+  const fmt = (el.getAttribute('format') || '').toLowerCase();
+  let t = el.textContent.trim(), v;
+  if (/zerodash|fixed-?zero/.test(fmt) || /^[-–—]$/.test(t)) v = 0;
+  else {
+    if (/comma-?decimal/.test(fmt)) t = t.replace(/[.\s]/g, '').replace(',', '.');
+    else t = t.replace(/[,\s]/g, '');
+    v = parseFloat(t);
+    if (isNaN(v)) return null;
+  }
+  v = v * Math.pow(10, parseInt(el.getAttribute('scale') || '0', 10) || 0);
+  if (el.getAttribute('sign') === '-') v = -v;
+  return v;
+}
+
+function parseIxbrl(text) {
+  const doc = new DOMParser().parseFromString(text, 'text/html');
+  const by = { context: [], unit: [], nonfraction: [] };
+  const all = doc.getElementsByTagName('*');
+  for (let i = 0; i < all.length; i++) { const l = localName(all[i]); if (by[l]) by[l].push(all[i]); }
+
+  const ctx = {};
+  by.context.forEach(c => {
+    const o = { seg: false, start: null, end: null };
+    const kids = c.getElementsByTagName('*');
+    for (let i = 0; i < kids.length; i++) {
+      const l = localName(kids[i]);
+      if (l === 'segment') o.seg = true;
+      else if (l === 'startdate') o.start = kids[i].textContent.trim();
+      else if (l === 'enddate' || l === 'instant') o.end = kids[i].textContent.trim();
+    }
+    ctx[c.getAttribute('id')] = o;
+  });
+
+  const units = {};
+  by.unit.forEach(u => {
+    const ms = u.getElementsByTagName('*');
+    for (let i = 0; i < ms.length; i++) {
+      if (localName(ms[i]) === 'measure') { units[u.getAttribute('id')] = ms[i].textContent.trim().split(':').pop(); break; }
+    }
+  });
+
+  const facts = []; let docEnd = null;
+  by.nonfraction.forEach(el => {
+    const c = ctx[el.getAttribute('contextref')];
+    if (!c || c.seg || !c.end) return;
+    if (!docEnd || c.end > docEnd) docEnd = c.end;
+    const key = NAME2KEY[(el.getAttribute('name') || '').split(':').pop()];
+    if (!key) return;
+    const v = parseNum(el);
+    if (v === null) return;
+    facts.push({ metric: key, value: v, start: c.start, end: c.end, unit: units[el.getAttribute('unitref')] || '' });
+  });
+  return { facts, docEnd, tagged: by.nonfraction.length };
+}
+
+/* ---------- reading a filing from Companies House ---------- */
+async function readFiling(f, num) {
+  const doc = {
+    kind: 'api', f,
+    label: 'Accounts filed ' + nz(f.date) + ' (type ' + nz(f.type) + '), made up to ' + nz(f.description_values && f.description_values.made_up_date),
+    link: f.transaction_id ? 'https://find-and-update.company-information.service.gov.uk/company/' + num + '/filing-history/' + f.transaction_id : null
+  };
+  try {
+    const meta = f.links && f.links.document_metadata;
+    if (!meta) { doc.err = 'No document is attached to this filing'; return doc; }
+    const m = await apiJson(meta);
+    if (!m) { doc.err = 'Document not found'; return doc; }
+    if (!m.resources || !m.resources['application/xhtml+xml']) { doc.err = 'Filed as PDF or paper only, no machine-readable version'; return doc; }
+    const url = (m.links && m.links.document) || (meta.replace(/\/$/, '') + '/content');
+    const r = await request(url, { headers: { Accept: 'application/xhtml+xml' } }, 'the accounts document');
+    if (!r.ok) { doc.err = 'Document could not be downloaded (error ' + r.status + ')'; return doc; }
+    const p = parseIxbrl(await r.text());
+    doc.facts = p.facts; doc.docEnd = p.docEnd;
+    if (!p.tagged) doc.err = 'No tagged financial data found in this document';
+    else if (!p.facts.length) doc.err = 'Document read, but none of the tracked figures are in it';
+  } catch (e) {
+    doc.err = e instanceof AppError ? e.message : 'Could not read this document (' + e.message + ')';
+  }
+  return doc;
+}
+
+/* ---------- main flow ---------- */
+$('form').addEventListener('submit', e => { e.preventDefault(); run(); });
+
+async function run() {
+  const token = ++runId;
   KEY = $('key').value.trim() || KEY;
-  const q = $('q').value.trim();
-  $('results').innerHTML = ''; $('out').innerHTML = ''; $('status').innerHTML = '';
-  if (!KEY) { $('status').innerHTML = '<div class="msg err">Paste your API key first.</div>'; return; }
-  if (!q) return;
-  // looks like a company number?
-  if (/^(\d{1,8}|[A-Za-z]{2}\d{6})$/.test(q)) {
-    return loadCompany(q.toUpperCase().padStart(8, '0'));
+  const num = $('num').value.trim().toUpperCase();
+  ['hdr', 'officers', 'directors', 'filings', 'charts'].forEach(id => { $(id).innerHTML = ''; });
+  state = null;
+  if (!KEY) { setStatus('error', 'Paste your API key in the box above first.', 'No API key'); return; }
+  if (!/^[A-Z0-9]{8}$/.test(num)) {
+    setStatus('error', 'A company number has exactly 8 characters (digits, or two letters then six digits). You entered ' + num.length + '. Include any leading zeros, for example 09446231.', 'Invalid company number');
+    return;
   }
   $('go').disabled = true;
   try {
-    const data = await api('/search/companies', { q, items_per_page: 15 });
-    const items = (data && data.items) || [];
-    if (!items.length) { $('status').innerHTML = '<div class="msg">No matches.</div>'; return; }
-    $('results').innerHTML = items.map(r =>
-      '<button data-n="' + esc(r.company_number) + '">' + esc(r.title) +
-      ' <small>· ' + esc(r.company_number) + ' · ' + esc(pretty(r.company_status)) + '</small></button>').join('');
-    $('results').querySelectorAll('button').forEach(b => b.onclick = () => loadCompany(b.dataset.n));
-  } catch (e) { showError(e); }
-  finally { $('go').disabled = false; }
-}
-$('go').onclick = search;
-$('q').addEventListener('keydown', e => { if (e.key === 'Enter') search(); });
+    setStatus('info', 'Looking up company ' + num + '...');
+    const profile = await apiJson('/company/' + num);
+    if (token !== runId) return;
+    if (!profile) { setStatus('error', 'Companies House has no company with number ' + num + '. Check the number and try again.', 'Company not found'); return; }
 
-async function loadCompany(n) {
-  $('results').innerHTML = '';
-  $('status').innerHTML = '<div class="msg">Pulling filings...</div>';
-  $('out').innerHTML = '';
-  try {
-    const calls = {
-      profile: () => api('/company/' + n),
-      officers: () => api('/company/' + n + '/officers', { items_per_page: 100 }),
-      filings: () => api('/company/' + n + '/filing-history', { items_per_page: 100 }),
-      charges: () => api('/company/' + n + '/charges'),
-      psc: () => api('/company/' + n + '/persons-with-significant-control'),
-      insolvency: () => api('/company/' + n + '/insolvency')
-    };
-    const keys = Object.keys(calls);
-    const res = await Promise.allSettled(keys.map(k => calls[k]()));
-    const co = {}, notes = [];
-    res.forEach((r, i) => {
-      if (r.status === 'fulfilled') co[keys[i]] = r.value;
-      else { co[keys[i]] = null; notes.push(keys[i] + ' -> ' + r.reason.message); }
+    state = { num, profile, officers: [], accounts: [], docs: [], notes: [], uploads: [] };
+    renderHeader();
+
+    setStatus('info', 'Loading officers and filings...');
+    try { state.officers = (await allItems('/company/' + num + '/officers', {}, 500)).items; }
+    catch (e) { state.notes.push('Officers could not be loaded: ' + e.message); }
+    try { state.accounts = (await allItems('/company/' + num + '/filing-history', { category: 'accounts' }, 300)).items; }
+    catch (e) { state.notes.push('Accounts filings could not be loaded: ' + e.message); }
+    if (token !== runId) return;
+    renderOfficers(); renderDirectors(); renderFilings(); renderCharts();
+
+    const toRead = state.accounts.slice(0, 20);
+    let done = 0;
+    await pool(toRead, 3, async f => {
+      const d = await readFiling(f, num);
+      state.docs.push(d);
+      done++;
+      if (token === runId) setStatus('info', 'Reading accounts ' + done + ' of ' + toRead.length + '...');
     });
-    if (res[0].status === 'rejected') throw res[0].reason;
-    if (!co.profile) { $('status').innerHTML = '<div class="msg err">Company not found. Check the number and try again.</div>'; return; }
-    $('status').innerHTML = notes.length
-      ? '<div class="msg">Some data could not be loaded and is shown as empty: ' + esc(notes.join(' | ')) + '</div>' : '';
-    render(co);
-  } catch (e) { showError(e); }
+    if (token !== runId) return;
+    state.docs.sort((a, b) => String(b.f.date).localeCompare(String(a.f.date)));
+    renderFilings(); renderCharts();
+    const ok = state.docs.filter(d => d.facts && d.facts.length).length;
+    setStatus('ok', 'Read figures from ' + ok + ' of ' + toRead.length + ' accounts filings' +
+      (state.accounts.length > toRead.length ? ' (only the 20 most recent are read)' : '') + '.', 'Done');
+  } catch (e) {
+    if (token === runId) setStatus('error', e instanceof AppError ? e.message : 'Something went wrong: ' + e.message, 'Could not load data');
+  } finally {
+    $('go').disabled = false;
+  }
 }
 
-function health(co) {
-  const p = co.profile, flags = [], goods = [];
-  let score = 100;
-  const now = new Date();
-
-  if (p.company_status !== 'active') { score -= 60; flags.push("Company status is '" + pretty(p.company_status) + "'"); }
-  else goods.push('Company is active');
-
-  const created = d(p.date_of_creation);
-  if (created) {
-    const age = (now - created) / (365.25 * 864e5);
-    if (age < 1) { score -= 10; flags.push('Very young company (' + age.toFixed(1) + ' years)'); }
-    else if (age < 3) { score -= 5; flags.push('Young company (' + age.toFixed(1) + ' years)'); }
-    else goods.push('Established (' + Math.round(age) + ' years old)');
-  }
-
-  if (p.accounts && p.accounts.overdue) { score -= 20; flags.push('Accounts are overdue'); }
-  else goods.push('Accounts not overdue');
-
-  if (p.confirmation_statement && p.confirmation_statement.overdue) { score -= 10; flags.push('Confirmation statement overdue'); }
-
-  if (p.has_insolvency_history || p.has_been_liquidated || co.insolvency) {
-    score -= 30; flags.push('Insolvency / liquidation history on record');
-  }
-
-  const out = ((co.charges && co.charges.items) || []).filter(c => c.status === 'outstanding').length;
-  if (out) { score -= Math.min(15, 5 * out); flags.push(out + ' outstanding charge(s) against company assets'); }
-
-  const yearAgo = new Date(now); yearAgo.setFullYear(yearAgo.getFullYear() - 1);
-  const recent = ((co.officers && co.officers.items) || []).filter(o => { const r = d(o.resigned_on); return r && r > yearAgo; }).length;
-  if (recent >= 3) { score -= 10; flags.push(recent + ' officers resigned in the last 12 months'); }
-
-  score = Math.max(0, score);
-  const label = score >= 80 ? 'Strong signals' : score >= 55 ? 'Mixed signals' : 'Caution';
-  const color = score >= 80 ? 'var(--good)' : score >= 55 ? 'var(--warn)' : 'var(--bad)';
-  return { score, label, color, flags, goods };
-}
-
+/* ---------- rendering ---------- */
 function addr(a) {
-  if (!a) return 'n/a';
-  return ['address_line_1', 'address_line_2', 'locality', 'region', 'postal_code', 'country'].map(k => a[k]).filter(Boolean).join(', ');
+  if (!a) return 'NA';
+  return ['address_line_1', 'address_line_2', 'locality', 'region', 'postal_code', 'country'].map(k => a[k]).filter(Boolean).join(', ') || 'NA';
 }
-
-function table(heads, rows) {
-  if (!rows.length) return '<p>Nothing on record.</p>';
-  return '<div class="tw"><table><thead><tr>' + heads.map(h => '<th>' + esc(h) + '</th>').join('') +
-    '</tr></thead><tbody>' + rows.map(r => '<tr>' + r.map(c => '<td>' + esc(c) + '</td>').join('') + '</tr>').join('') +
+function table(caption, heads, rows) {
+  return '<div class="tw"><table><caption>' + esc(caption) + '</caption><thead><tr>' +
+    heads.map(h => '<th scope="col">' + esc(h) + '</th>').join('') + '</tr></thead><tbody>' +
+    rows.map(r => '<tr>' + r.map(c => '<td' + (c && c.num ? ' class="num"' : '') + '>' + (c && c.html != null ? c.html : esc(c && c.t != null ? c.t : c)) + '</td>').join('') + '</tr>').join('') +
     '</tbody></table></div>';
 }
 
-function render(co) {
-  const p = co.profile, h = health(co);
-  const offs = (co.officers && co.officers.items) || [];
-  const fils = (co.filings && co.filings.items) || [];
-  const chs = (co.charges && co.charges.items) || [];
-  const pscs = (co.psc && co.psc.items) || [];
+function renderHeader() {
+  const p = state.profile;
+  const acc = p.accounts || {};
+  $('hdr').innerHTML = '<section class="card" aria-labelledby="h-co"><h2 id="h-co">' + esc(p.company_name) + '</h2>' +
+    '<div class="facts">' +
+    [['Company number', p.company_number], ['Status', pretty(p.company_status)], ['Type', pretty(p.type)],
+     ['Incorporated', p.date_of_creation], ['Registered office', addr(p.registered_office_address)],
+     ['Last accounts made up to', acc.last_accounts && acc.last_accounts.made_up_to], ['Next accounts due', acc.next_due]]
+      .map(x => '<div class="fact"><div class="k">' + esc(x[0]) + '</div><div class="v">' + esc(nz(x[1])) + '</div></div>').join('') +
+    '</div>' + (p.company_status_detail ? '<p class="hint">Status detail: ' + esc(pretty(p.company_status_detail)) + '</p>' : '') +
+    '<p class="hint">Source: Companies House company profile.</p></section>';
+}
 
-  // filings per year
-  const byYear = {};
-  fils.forEach(f => { const y = (f.date || '').slice(0, 4); if (y) byYear[y] = (byYear[y] || 0) + 1; });
-  const years = Object.keys(byYear).sort();
-  const max = Math.max(1, ...Object.values(byYear));
-  const bars = years.length
-    ? '<div class="bars">' + years.map(y => '<div class="bar"><b>' + byYear[y] + '</b><div style="height:' + Math.round(byYear[y] / max * 100) + '%"></div><span>' + y + '</span></div>').join('') + '</div>'
-    : '';
+function renderOfficers() {
+  const cur = state.officers.filter(o => !o.resigned_on);
+  let html = '<section class="card" aria-labelledby="h-off"><h2 id="h-off">Current officers</h2>';
+  if (!state.officers.length) html += '<p class="na"><b>NA</b>: no officers were returned by Companies House.</p>';
+  else if (!cur.length) html += '<p class="na"><b>NA</b>: no current officers on record (' + state.officers.length + ' resigned or ended).</p>';
+  else html += table('Officers currently in post', ['Name', 'Role', 'Appointed', 'Occupation'],
+    cur.map(o => [o.name, pretty(o.officer_role), nz(o.appointed_on), nz(o.occupation)]));
+  html += '<p class="hint">Source: Companies House officers list.</p>' + state.notes.filter(n => /^Officers/.test(n)).map(n => '<p class="hint">' + esc(n) + '</p>').join('') + '</section>';
+  $('officers').innerHTML = html;
+}
 
-  const sortedOffs = offs.slice().sort((a, b) => (a.resigned_on ? 1 : 0) - (b.resigned_on ? 1 : 0));
-  const current = offs.filter(o => !o.resigned_on).length;
+function directorSeries() {
+  const dirs = state.officers.filter(o => /director/.test(o.officer_role || ''));
+  const dated = dirs.filter(o => o.appointed_on);
+  const undated = dirs.length - dated.length;
+  if (!dated.length) return { cats: [], vals: [], undated, total: dirs.length };
+  const first = Math.min.apply(null, dated.map(o => +o.appointed_on.slice(0, 4)));
+  const now = new Date(), nowY = now.getFullYear(), today = now.toISOString().slice(0, 10);
+  const cats = [], vals = [];
+  for (let y = first; y <= nowY; y++) {
+    const at = y === nowY ? today : y + '-12-31';
+    cats.push(y === nowY ? String(y) + ' (now)' : String(y));
+    vals.push(dated.filter(o => o.appointed_on <= at && (!o.resigned_on || o.resigned_on > at)).length);
+  }
+  return { cats, vals, undated, total: dirs.length };
+}
 
-  const tabs = {
-    Filings: bars + '<h3>Filing history (latest 100)</h3>' +
-      table(['Date', 'Category', 'Type', 'Description'], fils.map(f => [fmt(f.date), pretty(f.category), f.type, pretty(f.description)])),
-    People: '<p><b>' + current + '</b> current officers · <b>' + (offs.length - current) + '</b> resigned</p>' +
-      table(['Name', 'Role', 'Appointed', 'Resigned', 'Occupation'], sortedOffs.map(o => [o.name, pretty(o.officer_role), fmt(o.appointed_on), fmt(o.resigned_on) || 'In post', o.occupation || ''])),
-    'Charges & insolvency': '<h3>Charges</h3>' +
-      table(['Status', 'Created', 'Satisfied', 'Classification', 'Secured by'], chs.map(c => [pretty(c.status), fmt(c.created_on), fmt(c.satisfied_on), (c.classification || {}).description || '', (c.persons_entitled || []).map(x => x.name).join(', ')])) +
-      '<h3>Insolvency</h3>' +
-      (co.insolvency && (co.insolvency.cases || []).length
-        ? '<ul>' + co.insolvency.cases.map(c => '<li>' + esc(pretty(c.type)) + ': ' + (c.dates || []).map(x => esc(pretty(x.type) + ' ' + x.date)).join(', ') + '</li>').join('') + '</ul>'
-        : '<p>No insolvency information on record.</p>'),
-    'Ownership (PSC)': table(['Name', 'Kind', 'Control', 'Notified', 'Ceased'],
-      pscs.map(i => [i.name, pretty(String(i.kind || '').split('#').pop()), (i.natures_of_control || []).map(pretty).join(', '), fmt(i.notified_on), fmt(i.ceased_on)]))
-  };
+function renderDirectors() {
+  const s = directorSeries();
+  let html = '<section class="card" aria-labelledby="h-dir"><h2 id="h-dir">Number of directors over time</h2>';
+  if (!s.cats.length) html += '<p class="na"><b>NA</b>: no directors with an appointment date are on record, so this chart cannot be drawn.</p>';
+  else {
+    html += barChart('dirchart', 'Number of directors at the end of each year', s.cats, s.vals, v => String(v), true);
+    html += '<details open><summary>Data table</summary>' + table('Directors in post at each date', ['Date', 'Directors'],
+      s.cats.map((c, i) => [c, { t: s.vals[i], num: true }])) + '</details>';
+  }
+  html += '<p class="hint">Source: Companies House officers list. Counted on 31 December of each year (today for the current year), directors only, not secretaries.' +
+    (s.undated ? ' ' + s.undated + ' director(s) have no appointment date on record and are not counted.' : '') + '</p></section>';
+  $('directors').innerHTML = html;
+}
 
-  const li = (arr, icon, empty) => '<ul class="sig">' + (arr.length ? arr : [empty]).map(x => '<li>' + icon + ' ' + esc(x) + '</li>').join('') + '</ul>';
+function renderFilings() {
+  let html = '<section class="card" aria-labelledby="h-fil"><h2 id="h-fil">Accounts filings</h2>';
+  if (!state.accounts.length) html += '<p class="na"><b>NA</b>: no accounts filings are on record for this company.</p>';
+  else {
+    const byTx = {}; state.docs.forEach(d => { byTx[d.f.transaction_id] = d; });
+    html += table('All accounts filings on record (' + state.accounts.length + ')', ['Filed', 'Type', 'Made up to', 'Description', 'Figures read', 'Source'],
+      state.accounts.map(f => {
+        const d = byTx[f.transaction_id];
+        const res = !d ? (state.docs.length ? 'Not read (limit of 20 most recent)' : 'Reading...')
+          : d.err ? 'No: ' + d.err : 'Yes: ' + d.facts.length + ' figure(s) found';
+        return [nz(f.date), nz(f.type), nz(f.description_values && f.description_values.made_up_date), pretty(f.description), res,
+          { html: f.transaction_id ? '<a href="https://find-and-update.company-information.service.gov.uk/company/' + esc(state.num) + '/filing-history/' + esc(f.transaction_id) + '">View filing</a>' : 'NA' }];
+      }));
+  }
+  html += state.notes.filter(n => /^Accounts/.test(n)).map(n => '<p class="hint">' + esc(n) + '</p>').join('');
+  html += '<p class="hint">Source: Companies House filing history (accounts category).</p></section>';
+  $('filings').innerHTML = html;
+}
 
-  $('out').innerHTML =
-    '<div class="card"><h2 style="margin:0">' + esc(p.company_name) + '</h2>' +
-    '<p class="sub" style="margin:4px 0 14px">No. ' + esc(p.company_number) + ' · ' + esc(pretty(p.type)) + ' · Incorporated ' + esc(p.date_of_creation || 'n/a') + ' · ' + esc(addr(p.registered_office_address)) + '</p>' +
-    '<div class="grid">' +
-      '<div class="metric"><div class="k">Health score</div><div class="v">' + h.score + '/100</div><span class="pill" style="background:' + h.color + '">' + h.label + '</span></div>' +
-      '<div class="metric"><div class="k">Status</div><div class="v">' + esc(pretty(p.company_status)) + '</div></div>' +
-      '<div class="metric"><div class="k">Next accounts due</div><div class="v">' + esc((p.accounts || {}).next_due || 'n/a') + '</div></div>' +
-      '<div class="metric"><div class="k">SIC codes</div><div class="v">' + esc((p.sic_codes || []).join(', ') || 'n/a') + '</div></div>' +
-    '</div></div>' +
-    '<div class="two"><div class="card"><b>Looks good</b>' + li(h.goods, '✅', 'Nothing notable') + '</div>' +
-    '<div class="card"><b>Red flags</b>' + (h.flags.length ? li(h.flags, '⚠️', '') : li([], '✅', 'None found in public data')) + '</div></div>' +
-    '<div class="card"><div class="tabs" id="tabs">' + Object.keys(tabs).map((t, i) => '<button data-t="' + esc(t) + '" class="' + (i ? '' : 'on') + '">' + esc(t) + '</button>').join('') + '</div><div id="tabBody">' + tabs.Filings + '</div></div>';
-
-  $('tabs').querySelectorAll('button').forEach(b => b.onclick = () => {
-    $('tabs').querySelectorAll('button').forEach(x => x.classList.remove('on'));
-    b.classList.add('on');
-    $('tabBody').innerHTML = tabs[b.dataset.t];
+/* ---------- financial series and charts ---------- */
+function buildSeries() {
+  const series = {}; METRICS.forEach(m => { series[m.key] = {}; });
+  const ends = {};
+  state.docs.forEach(d => {
+    (d.facts || []).forEach(f => {
+      const cur = f.end === d.docEnd;
+      const ex = series[f.metric][f.end];
+      if (!ex || (ex.comparative && cur)) series[f.metric][f.end] = { value: f.value, start: f.start, end: f.end, unit: f.unit, comparative: !cur, doc: d };
+      ends[f.end] = true;
+    });
   });
+  return { series, periods: Object.keys(ends).sort() };
+}
+
+const lab = end => { const d = new Date(end + 'T00:00:00Z'); return isNaN(d) ? end : d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' }); };
+
+function fmtVal(v, unit) {
+  const sym = unit === 'GBP' ? '£' : unit === 'EUR' ? '€' : unit === 'USD' ? '$' : '';
+  const a = Math.abs(v);
+  let s = a >= 1e9 ? (a / 1e9).toFixed(2) + 'bn' : a >= 1e6 ? (a / 1e6).toFixed(2) + 'm' : a >= 1e3 ? (a / 1e3).toFixed(1) + 'k' : String(Math.round(a * 100) / 100);
+  s = s.replace(/\.0+(?=[a-z]|$)/, '').replace(/(\.\d*?)0+(?=[a-z]|$)/, '$1');
+  return (v < 0 ? '-' : '') + sym + s;
+}
+
+function niceTicks(min, max, integer) {
+  let step = (max - min) / 4;
+  const mag = Math.pow(10, Math.floor(Math.log10(step)));
+  const n = step / mag;
+  step = (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * mag;
+  if (integer) step = Math.max(1, Math.ceil(step));
+  const lo = Math.floor(min / step + 1e-9) * step, hi = Math.ceil(max / step - 1e-9) * step, t = [];
+  for (let v = lo; v <= hi + step * 0.001; v += step) t.push(Math.round(v / step) * step);
+  return t;
+}
+
+function barChart(id, title, cats, vals, fmt, integer) {
+  const W = 720, H = 300, L = 68, R = 12, T = 22, B = 48, pw = W - L - R, ph = H - T - B;
+  const nums = vals.filter(v => v !== null);
+  let min = Math.min.apply(null, [0].concat(nums)), max = Math.max.apply(null, [0].concat(nums));
+  if (min === max) max = min + 1;
+  const ticks = niceTicks(min, max, integer), lo = ticks[0], hi = ticks[ticks.length - 1];
+  const y = v => T + ph * (1 - (v - lo) / (hi - lo));
+  const slot = pw / cats.length, bw = Math.min(70, slot * 0.6);
+  let s = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-labelledby="' + id + '-t ' + id + '-d"><title id="' + id + '-t">' + esc(title) + '</title><desc id="' + id + '-d">' +
+    esc(cats.map((c, i) => c + ': ' + (vals[i] === null ? 'NA' : fmt(vals[i]))).join('; ')) + '</desc>';
+  ticks.forEach(t => {
+    s += '<line class="grid' + (t === 0 ? ' zero' : '') + '" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(t) + '" y2="' + y(t) + '"/>' +
+      '<text class="ax" x="' + (L - 8) + '" y="' + (y(t) + 4) + '" text-anchor="end">' + esc(fmt(t)) + '</text>';
+  });
+  cats.forEach((c, i) => {
+    const cx = L + slot * i + slot / 2, v = vals[i];
+    if (v === null) s += '<text class="na-t" x="' + cx + '" y="' + (y(0) - 6) + '" text-anchor="middle">NA</text>';
+    else {
+      const y0 = y(0), y1 = y(v);
+      s += '<rect class="bar' + (v < 0 ? ' neg' : '') + '" x="' + (cx - bw / 2) + '" y="' + Math.min(y0, y1) + '" width="' + bw + '" height="' + Math.max(1, Math.abs(y0 - y1)) + '"/>' +
+        '<text class="val" x="' + cx + '" y="' + (v < 0 ? y1 + 14 : y1 - 5) + '" text-anchor="middle">' + esc(fmt(v)) + '</text>';
+    }
+    s += '<text class="ax" x="' + cx + '" y="' + (H - B + 18) + '" text-anchor="middle">' + esc(c) + '</text>';
+  });
+  return s + '</svg>';
+}
+
+function sourceText(e) {
+  const d = e.doc;
+  const basis = e.comparative ? 'Prior-year comparative shown in a later filing. ' : '';
+  if (d.kind === 'file') return basis + d.label;
+  return basis + d.label;
+}
+
+function metricCard(m, periods, data, idx) {
+  const vals = periods.map(p => data[p] ? data[p].value : null);
+  const any = vals.some(v => v !== null);
+  const unit = (periods.map(p => data[p] && data[p].unit).find(Boolean)) || '';
+  const showUnit = !m.unitless && unit ? ' (' + unit + ')' : '';
+  let html = '<section class="card" aria-labelledby="m' + idx + '"><h3 id="m' + idx + '">' + esc(m.label + showUnit) + '</h3>';
+  if (!any) return html + '<p class="na"><b>NA</b>: not found in any accounts filing that was read.</p></section>';
+  const f = m.unitless ? (v => String(Math.round(v))) : (v => fmtVal(v, unit));
+  html += barChart('mc' + idx, m.label + ' by accounting period', periods.map(lab), vals, f, !!m.unitless);
+  html += '<details open><summary>Periods and sources</summary>' + table(m.label + ': period and source for each figure', ['Period', 'Figure', 'Source'],
+    periods.map(p => {
+      const e = data[p];
+      if (!e) return [lab(p) + ' (ends ' + p + ')', { t: 'NA', num: true }, 'Not found in any filing that was read'];
+      const period = (e.start ? e.start + ' to ' : 'At ') + e.end;
+      const link = e.doc.link ? '<a href="' + esc(e.doc.link) + '">View filing</a>' : '';
+      return [period, { t: new Intl.NumberFormat('en-GB').format(e.value) + (m.unitless || !e.unit ? '' : ' ' + e.unit), num: true },
+        { html: esc(sourceText(e)) + (link ? ' – ' + link : '') }];
+    })) + '</details></section>';
+  return html;
+}
+
+function renderCharts() {
+  if (!state) return;
+  let html = '<h2>Financial figures from the accounts</h2>' +
+    '<p class="hint" style="margin:-4px 0 12px">Read directly from the machine-readable accounts filed at Companies House. Nothing is estimated. If a figure is not in the filings (small companies often do not file a profit and loss account), it shows NA.</p>';
+  const { series, periods } = buildSeries();
+  if (!state.accounts.length) html += '<div class="msg err"><b class="t">No financial data</b>No accounts filings are on record, so every financial metric is NA.</div>';
+  else if (!state.docs.length) html += '<p class="na">Reading accounts filings...</p>';
+  else if (!periods.length) html += '<div class="msg err"><b class="t">No financial figures could be read</b>None of the accounts filings contained readable figures, so every metric is NA. The table above says why for each filing. You can add accounts files from your computer below.</div>';
+  else html += METRICS.map((m, i) => metricCard(m, periods, series[m.key], i)).join('');
+
+  html += '<section class="card" aria-labelledby="h-up"><h2 id="h-up">Add accounts files from your computer (optional)</h2>' +
+    '<label for="files">Accounts files (.html or .xhtml, the machine-readable format)</label>' +
+    '<input type="file" id="files" accept=".html,.htm,.xhtml,.xml" multiple>' +
+    '<p class="hint">Figures from these files are added to the charts above. PDFs cannot be read.</p>' +
+    state.uploads.map(u => '<p class="hint">' + esc(u) + '</p>').join('') + '</section>';
+  $('charts').innerHTML = html;
+  $('files').addEventListener('change', onFiles);
+}
+
+async function onFiles(ev) {
+  const files = Array.from(ev.target.files || []);
+  for (const file of files) {
+    try {
+      const p = parseIxbrl(await file.text());
+      if (!p.tagged) { state.uploads.push(file.name + ': no tagged financial data found (it may be a PDF or scanned document).'); continue; }
+      state.docs.push({ kind: 'file', label: 'Uploaded file: ' + file.name, facts: p.facts, docEnd: p.docEnd, f: { date: '', transaction_id: 'file-' + file.name } });
+      state.uploads.push(file.name + ': read, ' + p.facts.length + ' figure(s) found' + (p.facts.length ? '' : ' (none of the tracked figures are in it)') + '.');
+    } catch (e) { state.uploads.push(file.name + ': could not be read.'); }
+  }
+  renderCharts();
 }
 </script>
 </body>
