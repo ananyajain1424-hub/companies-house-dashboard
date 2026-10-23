@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Company Health Dashboard</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#1c2330;--mute:#657084;--line:#e3e7ee;--accent:#1f6feb;--good:#1a7f4b;--warn:#b45309;--bad:#b42318}
+@media (prefers-color-scheme:dark){:root{--bg:#0f141b;--card:#171e28;--ink:#e8edf4;--mute:#93a0b4;--line:#263040;--accent:#5aa2ff;--good:#3fb97c;--warn:#e0a03a;--bad:#f0685d}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:24px;margin:0 0 4px}
+.sub{color:var(--mute);margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+input[type=text],input[type=password]{flex:1;min-width:180px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+button{padding:10px 14px;border:0;border-radius:8px;background:var(--accent);color:#fff;font:inherit;cursor:pointer}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button:disabled{opacity:.5;cursor:default}
+label{display:block;font-size:13px;color:var(--mute);margin-bottom:6px}
+.results button{display:block;width:100%;text-align:left;background:transparent;color:var(--ink);border:1px solid var(--line);margin-top:6px}
+.results button:hover{border-color:var(--accent)}
+.results small{color:var(--mute)}
+.msg{padding:12px 14px;border-radius:8px;margin:10px 0;border:1px solid var(--line)}
+.msg.err{border-color:var(--bad);color:var(--bad)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.metric{border:1px solid var(--line);border-radius:10px;padding:12px}
+.metric .k{font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em}
+.metric .v{font-size:22px;font-weight:650;margin-top:2px;word-break:break-word}
+.pill{display:inline-block;padding:2px 10px;border-radius:99px;font-size:13px;font-weight:600;color:#fff}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:700px){.two{grid-template-columns:1fr}}
+ul.sig{list-style:none;padding:0;margin:6px 0 0}
+ul.sig li{padding:4px 0}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tabs button{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mute);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.tw{overflow-x:auto}
+.bars{display:flex;align-items:flex-end;gap:6px;height:150px;padding-top:10px;overflow-x:auto}
+.bar{flex:1;min-width:34px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.bar div{width:100%;background:var(--accent);border-radius:4px 4px 0 0;min-height:2px}
+.bar span{font-size:11px;color:var(--mute);margin-top:4px}
+.bar b{font-size:11px;margin-bottom:2px}
+.foot{color:var(--mute);font-size:13px;margin-top:20px}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Company health dashboard</h1>
+  <p class="sub">Search a UK company and get a quick read from its public Companies House filings.</p>
+
+  <div class="card" id="keyCard">
+    <label for="key">Companies House API key (Web key)</label>
+    <div class="row">
+      <input type="password" id="key" placeholder="Paste your key here" autocomplete="off">
+      <button class="ghost" id="saveKey">Save in this browser</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <label for="q">Company name or number</label>
+    <div class="row">
+      <input type="text" id="q" placeholder="e.g. Monzo Bank or 09446231">
+      <button id="go">Search</button>
+    </div>
+    <div id="results" class="results"></div>
+  </div>
+
+  <div id="status"></div>
+  <div id="out"></div>
+
+  <p class="foot">Health score is a simple rule-based read on public data. Private companies only file limited accounts, so treat it as a signal, not a verdict. Not financial advice.</p>
+</div>
+
+<script>
+// Optional: paste a Web key here so visitors don't need their own.
+// Only do this if the key is locked to your site's domain on the Companies House developer hub.
+const DEFAULT_KEY = '';
+
+const BASE = 'https://api.company-information.service.gov.uk';
+const $ = id => document.getElementById(id);
+let KEY = DEFAULT_KEY;
+try { KEY = localStorage.getItem('ch_key') || DEFAULT_KEY; } catch (e) {}
+if (DEFAULT_KEY) $('keyCard').classList.add('hide');
+$('key').value = KEY;
+
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pretty = s => s ? String(s).replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'n/a';
+const d = s => { const x = s ? new Date(s) : null; return x && !isNaN(x) ? x : null; };
+const fmt = s => s || '';
+
+async function api(path, params) {
+  const url = new URL(BASE + path);
+  Object.entries(params || {}).forEach(([k, v]) => url.searchParams.set(k, v));
+  let r;
+  try {
+    r = await fetch(url, { headers: { Authorization: 'Basic ' + btoa(KEY + ':') } });
+  } catch (e) { throw new Error('NETWORK'); }
+  if (r.status === 404) return null;
+  if (r.status === 401) throw new Error('KEY');
+  if (r.status === 429) throw new Error('RATE');
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+
+function showError(e) {
+  const m = {
+    KEY: 'The API key was rejected. Check you pasted it right, and that it is a Web key.',
+    RATE: 'Too many requests (limit is 600 per 5 minutes). Wait a bit and try again.',
+    NETWORK: 'Could not reach Companies House from this page. Make sure you are using a Web key, that this site\'s address is listed under "JavaScript domains" for that key, and that you opened the hosted link (not the file from your computer).'
+  }[e.message] || ('Something went wrong: ' + e.message);
+  $('status').innerHTML = '<div class="msg err">' + esc(m) + '</div>';
+}
+
+$('saveKey').onclick = () => {
+  KEY = $('key').value.trim();
+  try { localStorage.setItem('ch_key', KEY); } catch (e) {}
+  $('status').innerHTML = '<div class="msg">Key saved in this browser.</div>';
+};
+
+async function search() {
+  KEY = $('key').value.trim() || KEY;
+  const q = $('q').value.trim();
+  $('results').innerHTML = ''; $('out').innerHTML = ''; $('status').innerHTML = '';
+  if (!KEY) { $('status').innerHTML = '<div class="msg err">Paste your API key first.</div>'; return; }
+  if (!q) return;
+  // looks like a company number?
+  if (/^(\d{1,8}|[A-Za-z]{2}\d{6})$/.test(q)) {
+    return loadCompany(q.toUpperCase().padStart(8, '0'));
+  }
+  $('go').disabled = true;
+  try {
+    const data = await api('/search/companies', { q, items_per_page: 15 });
+    const items = (data && data.items) || [];
+    if (!items.length) { $('status').innerHTML = '<div class="msg">No matches.</div>'; return; }
+    $('results').innerHTML = items.map(r =>
+      '<button data-n="' + esc(r.company_number) + '">' + esc(r.title) +
+      ' <small>· ' + esc(r.company_number) + ' · ' + esc(pretty(r.company_status)) + '</small></button>').join('');
+    $('results').querySelectorAll('button').forEach(b => b.onclick = () => loadCompany(b.dataset.n));
+  } catch (e) { showError(e); }
+  finally { $('go').disabled = false; }
+}
+$('go').onclick = search;
+$('q').addEventListener('keydown', e => { if (e.key === 'Enter') search(); });
+
+async function loadCompany(n) {
+  $('results').innerHTML = '';
+  $('status').innerHTML = '<div class="msg">Pulling filings...</div>';
+  $('out').innerHTML = '';
+  try {
+    const [profile, officers, filings, charges, psc, insolvency] = await Promise.all([
+      api('/company/' + n),
+      api('/company/' + n + '/officers', { items_per_page: 100 }),
+      api('/company/' + n + '/filing-history', { items_per_page: 100 }),
+      api('/company/' + n + '/charges'),
+      api('/company/' + n + '/persons-with-significant-control'),
+      api('/company/' + n + '/insolvency')
+    ]);
+    if (!profile) { $('status').innerHTML = '<div class="msg err">Company not found.</div>'; return; }
+    $('status').innerHTML = '';
+    render({ profile, officers, filings, charges, psc, insolvency });
+  } catch (e) { showError(e); }
+}
+
+function health(co) {
+  const p = co.profile, flags = [], goods = [];
+  let score = 100;
+  const now = new Date();
+
+  if (p.company_status !== 'active') { score -= 60; flags.push("Company status is '" + pretty(p.company_status) + "'"); }
+  else goods.push('Company is active');
+
+  const created = d(p.date_of_creation);
+  if (created) {
+    const age = (now - created) / (365.25 * 864e5);
+    if (age < 1) { score -= 10; flags.push('Very young company (' + age.toFixed(1) + ' years)'); }
+    else if (age < 3) { score -= 5; flags.push('Young company (' + age.toFixed(1) + ' years)'); }
+    else goods.push('Established (' + Math.round(age) + ' years old)');
+  }
+
+  if (p.accounts && p.accounts.overdue) { score -= 20; flags.push('Accounts are overdue'); }
+  else goods.push('Accounts not overdue');
+
+  if (p.confirmation_statement && p.confirmation_statement.overdue) { score -= 10; flags.push('Confirmation statement overdue'); }
+
+  if (p.has_insolvency_history || p.has_been_liquidated || co.insolvency) {
+    score -= 30; flags.push('Insolvency / liquidation history on record');
+  }
+
+  const out = ((co.charges && co.charges.items) || []).filter(c => c.status === 'outstanding').length;
+  if (out) { score -= Math.min(15, 5 * out); flags.push(out + ' outstanding charge(s) against company assets'); }
+
+  const yearAgo = new Date(now); yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+  const recent = ((co.officers && co.officers.items) || []).filter(o => { const r = d(o.resigned_on); return r && r > yearAgo; }).length;
+  if (recent >= 3) { score -= 10; flags.push(recent + ' officers resigned in the last 12 months'); }
+
+  score = Math.max(0, score);
+  const label = score >= 80 ? 'Strong signals' : score >= 55 ? 'Mixed signals' : 'Caution';
+  const color = score >= 80 ? 'var(--good)' : score >= 55 ? 'var(--warn)' : 'var(--bad)';
+  return { score, label, color, flags, goods };
+}
+
+function addr(a) {
+  if (!a) return 'n/a';
+  return ['address_line_1', 'address_line_2', 'locality', 'region', 'postal_code', 'country'].map(k => a[k]).filter(Boolean).join(', ');
+}
+
+function table(heads, rows) {
+  if (!rows.length) return '<p>Nothing on record.</p>';
+  return '<div class="tw"><table><thead><tr>' + heads.map(h => '<th>' + esc(h) + '</th>').join('') +
+    '</tr></thead><tbody>' + rows.map(r => '<tr>' + r.map(c => '<td>' + esc(c) + '</td>').join('') + '</tr>').join('') +
+    '</tbody></table></div>';
+}
+
+function render(co) {
+  const p = co.profile, h = health(co);
+  const offs = (co.officers && co.officers.items) || [];
+  const fils = (co.filings && co.filings.items) || [];
+  const chs = (co.charges && co.charges.items) || [];
+  const pscs = (co.psc && co.psc.items) || [];
+
+  // filings per year
+  const byYear = {};
+  fils.forEach(f => { const y = (f.date || '').slice(0, 4); if (y) byYear[y] = (byYear[y] || 0) + 1; });
+  const years = Object.keys(byYear).sort();
+  const max = Math.max(1, ...Object.values(byYear));
+  const bars = years.length
+    ? '<div class="bars">' + years.map(y => '<div class="bar"><b>' + byYear[y] + '</b><div style="height:' + Math.round(byYear[y] / max * 100) + '%"></div><span>' + y + '</span></div>').join('') + '</div>'
+    : '';
+
+  const sortedOffs = offs.slice().sort((a, b) => (a.resigned_on ? 1 : 0) - (b.resigned_on ? 1 : 0));
+  const current = offs.filter(o => !o.resigned_on).length;
+
+  const tabs = {
+    Filings: bars + '<h3>Filing history (latest 100)</h3>' +
+      table(['Date', 'Category', 'Type', 'Description'], fils.map(f => [fmt(f.date), pretty(f.category), f.type, pretty(f.description)])),
+    People: '<p><b>' + current + '</b> current officers · <b>' + (offs.length - current) + '</b> resigned</p>' +
+      table(['Name', 'Role', 'Appointed', 'Resigned', 'Occupation'], sortedOffs.map(o => [o.name, pretty(o.officer_role), fmt(o.appointed_on), fmt(o.resigned_on) || 'In post', o.occupation || ''])),
+    'Charges & insolvency': '<h3>Charges</h3>' +
+      table(['Status', 'Created', 'Satisfied', 'Classification', 'Secured by'], chs.map(c => [pretty(c.status), fmt(c.created_on), fmt(c.satisfied_on), (c.classification || {}).description || '', (c.persons_entitled || []).map(x => x.name).join(', ')])) +
+      '<h3>Insolvency</h3>' +
+      (co.insolvency && (co.insolvency.cases || []).length
+        ? '<ul>' + co.insolvency.cases.map(c => '<li>' + esc(pretty(c.type)) + ': ' + (c.dates || []).map(x => esc(pretty(x.type) + ' ' + x.date)).join(', ') + '</li>').join('') + '</ul>'
+        : '<p>No insolvency information on record.</p>'),
+    'Ownership (PSC)': table(['Name', 'Kind', 'Control', 'Notified', 'Ceased'],
+      pscs.map(i => [i.name, pretty(String(i.kind || '').split('#').pop()), (i.natures_of_control || []).map(pretty).join(', '), fmt(i.notified_on), fmt(i.ceased_on)]))
+  };
+
+  const li = (arr, icon, empty) => '<ul class="sig">' + (arr.length ? arr : [empty]).map(x => '<li>' + icon + ' ' + esc(x) + '</li>').join('') + '</ul>';
+
+  $('out').innerHTML =
+    '<div class="card"><h2 style="margin:0">' + esc(p.company_name) + '</h2>' +
+    '<p class="sub" style="margin:4px 0 14px">No. ' + esc(p.company_number) + ' · ' + esc(pretty(p.type)) + ' · Incorporated ' + esc(p.date_of_creation || 'n/a') + ' · ' + esc(addr(p.registered_office_address)) + '</p>' +
+    '<div class="grid">' +
+      '<div class="metric"><div class="k">Health score</div><div class="v">' + h.score + '/100</div><span class="pill" style="background:' + h.color + '">' + h.label + '</span></div>' +
+      '<div class="metric"><div class="k">Status</div><div class="v">' + esc(pretty(p.company_status)) + '</div></div>' +
+      '<div class="metric"><div class="k">Next accounts due</div><div class="v">' + esc((p.accounts || {}).next_due || 'n/a') + '</div></div>' +
+      '<div class="metric"><div class="k">SIC codes</div><div class="v">' + esc((p.sic_codes || []).join(', ') || 'n/a') + '</div></div>' +
+    '</div></div>' +
+    '<div class="two"><div class="card"><b>Looks good</b>' + li(h.goods, '✅', 'Nothing notable') + '</div>' +
+    '<div class="card"><b>Red flags</b>' + (h.flags.length ? li(h.flags, '⚠️', '') : li([], '✅', 'None found in public data')) + '</div></div>' +
+    '<div class="card"><div class="tabs" id="tabs">' + Object.keys(tabs).map((t, i) => '<button data-t="' + esc(t) + '" class="' + (i ? '' : 'on') + '">' + esc(t) + '</button>').join('') + '</div><div id="tabBody">' + tabs.Filings + '</div></div>';
+
+  $('tabs').querySelectorAll('button').forEach(b => b.onclick = () => {
+    $('tabs').querySelectorAll('button').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    $('tabBody').innerHTML = tabs[b.dataset.t];
+  });
+}
+</script>
+</body>
+</html>
